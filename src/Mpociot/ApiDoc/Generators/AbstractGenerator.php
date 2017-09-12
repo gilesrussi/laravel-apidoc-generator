@@ -433,6 +433,9 @@ abstract class AbstractGenerator
                 $attributeData['value'] = $faker->ipv4;
                 $attributeData['type'] = $rule;
                 break;
+            case 'custom':
+                $attributeData['value'] = 'oi';
+                $attributeData['type'] = $rule;
         }
 
         if ($attributeData['value'] === '') {
