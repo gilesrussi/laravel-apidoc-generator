@@ -436,6 +436,7 @@ abstract class AbstractGenerator
             case 'custom':
                 $attributeData['value'] = 'oi';
                 $attributeData['type'] = $rule;
+                
         }
 
         if ($attributeData['value'] === '') {
