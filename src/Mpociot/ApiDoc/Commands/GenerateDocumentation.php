@@ -2,6 +2,7 @@
 
 namespace Mpociot\ApiDoc\Commands;
 
+use Illuminate\Routing\ControllerDispatcher;
 use ReflectionClass;
 use Illuminate\Console\Command;
 use Mpociot\Reflection\DocBlock;
@@ -61,6 +62,7 @@ class GenerateDocumentation extends Command
      */
     public function handle()
     {
+
         if ($this->option('router') === 'laravel') {
             $generator = new LaravelGenerator();
         } else {
@@ -239,7 +241,7 @@ class GenerateDocumentation extends Command
     private function getRoutes()
     {
         if ($this->option('router') === 'laravel') {
-            return Route::getRoutes();
+            return app(\Illuminate\Routing\Router::class)->getRoutes();
         } else {
             return app('Dingo\Api\Routing\Router')->getRoutes()[$this->option('routePrefix')];
         }
@@ -260,7 +262,19 @@ class GenerateDocumentation extends Command
         $parsedRoutes = [];
         foreach ($routes as $route) {
             if (in_array($route->getName(), $allowedRoutes) || str_is($routePrefix, $generator->getUri($route)) || in_array($middleware, $route->middleware())) {
-                if ($this->isValidRoute($route) && $this->isRouteVisibleForDocumentation($route->getAction()['uses'])) {
+                $dispatcher = $route->controllerDispatcher();
+                if(method_exists($dispatcher, 'alterMethod')) {
+                    $uses = $route->getAction('uses');
+                    try {
+                        list($class, $method) = app(\Illuminate\Support\Str::class)::parseCallback($uses);
+                        $uses = $dispatcher->alterMethod($class, $method);
+                        $route->setAction(['uses' => "$class@$uses"]);
+                    } catch (\Exception $e) {
+                        $asd = $e;
+                    }
+                }
+                if ($this->isValidRoute($route) && $this->isRouteVisibleForDocumentation($route->getAction('uses'))) {
+                    $this->info('Processing route: ['.implode(',', $generator->getMethods($route)).'] '.$generator->getUri($route));
                     $parsedRoutes[] = $generator->processRoute($route, $bindings, $this->option('header'), $withResponse);
                     $this->info('Processed route: ['.implode(',', $generator->getMethods($route)).'] '.$generator->getUri($route));
                 } else {

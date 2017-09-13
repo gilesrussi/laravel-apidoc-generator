@@ -2,6 +2,7 @@
 
 namespace Mpociot\ApiDoc\Generators;
 
+use Illuminate\Routing\Router;
 use ReflectionClass;
 use League\Fractal\Manager;
 use Illuminate\Routing\Route;
@@ -95,7 +96,7 @@ class LaravelGenerator extends AbstractGenerator
             'parameters' => [],
             'response' => $content,
             'showresponse' => $showresponse,
-        ], $routeAction, $bindings);
+        ], $route, $bindings);
     }
 
     /**
@@ -134,12 +135,12 @@ class LaravelGenerator extends AbstractGenerator
             $uri, $method, $parameters,
             $cookies, $files, $this->transformHeadersToServerVars($server), $content
         );
-
+        \Illuminate\Support\Facades\DB::beginTransaction();
         $kernel = App::make('Illuminate\Contracts\Http\Kernel');
         $response = $kernel->handle($request);
 
         $kernel->terminate($request, $response);
-
+        \Illuminate\Support\Facades\DB::rollback();
         if (file_exists($file = App::bootstrapPath().'/app.php')) {
             $app = require $file;
             $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
@@ -195,8 +196,8 @@ class LaravelGenerator extends AbstractGenerator
             if (version_compare(PHP_VERSION, '7.0.0') >= 0 && \is_null($type)) {
                 // we can only get the type with reflection for PHP 7
                 if ($parameter->hasType() &&
-                ! $parameter->getType()->isBuiltin() &&
-                \class_exists((string) $parameter->getType())) {
+                    ! $parameter->getType()->isBuiltin() &&
+                    \class_exists((string) $parameter->getType())) {
                     //we have a type
                     $type = (string) $parameter->getType();
                 }
@@ -242,14 +243,14 @@ class LaravelGenerator extends AbstractGenerator
     }
 
     /**
-     * @param  string $route
+     * @param  Route $route
      * @param  array $bindings
      *
      * @return array
      */
     protected function getRouteRules($route, $bindings)
     {
-        list($class, $method) = explode('@', $route);
+        list($class, $method) = explode('@', $route->getAction('uses'));
         $reflection = new ReflectionClass($class);
         $reflectionMethod = $reflection->getMethod($method);
 

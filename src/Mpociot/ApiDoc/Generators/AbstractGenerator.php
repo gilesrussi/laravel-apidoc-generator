@@ -72,14 +72,14 @@ abstract class AbstractGenerator
 
     /**
      * @param array $routeData
-     * @param array $routeAction
+     * @param Route $route
      * @param array $bindings
      *
      * @return mixed
      */
-    protected function getParameters($routeData, $routeAction, $bindings)
+    protected function getParameters($routeData, $route, $bindings)
     {
-        $validator = Validator::make([], $this->getRouteRules($routeAction['uses'], $bindings));
+        $validator = Validator::make([], $this->getRouteRules($route, $bindings));
         foreach ($validator->getRules() as $attribute => $rules) {
             $attributeData = [
                 'required' => false,
@@ -436,7 +436,7 @@ abstract class AbstractGenerator
             case 'custom':
                 $attributeData['value'] = 'oi';
                 $attributeData['type'] = $rule;
-                
+
         }
 
         if ($attributeData['value'] === '') {
