@@ -79,8 +79,9 @@ abstract class AbstractGenerator
      */
     protected function getParameters($routeData, $route, $bindings)
     {
-        $validator = Validator::make([], $this->getRouteRules($route, $bindings));
-        foreach ($validator->getRules() as $attribute => $rules) {
+        $allRules = $this->getRouteRules($route, $bindings);
+
+        foreach ($allRules as $attribute => $rules) {
             $attributeData = [
                 'required' => false,
                 'type' => null,
@@ -88,7 +89,10 @@ abstract class AbstractGenerator
                 'value' => '',
                 'description' => [],
             ];
-            foreach ($rules as $ruleName => $rule) {
+            if(!is_array($rules)) {
+                $rules = explode('|', $rules);
+            }
+            foreach ($rules as $rule) {
                 $this->parseRule($rule, $attribute, $attributeData, $routeData['id']);
             }
             $routeData['parameters'][$attribute] = $attributeData;
